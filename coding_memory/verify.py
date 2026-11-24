@@ -10,6 +10,8 @@ from urllib.request import ProxyHandler, Request, build_opener
 from uuid import uuid4
 
 from .__main__ import http_get
+from .config import ROOT_DIR
+from .drift import scan_notes_contracts
 
 
 class McpStreamClient:
@@ -169,6 +171,12 @@ def main() -> None:
     parser.add_argument("--site-url", default="http://localhost:8088")
     parser.add_argument("--write-check", action="store_true", help="Verify write/read/publish lifecycle")
     args = parser.parse_args()
+
+    reports = scan_notes_contracts(ROOT_DIR / "examples" / "notes")
+    for rep in reports:
+        if rep.drift_level == "UNANCHORED" or not (rep.probes or rep.verifications):
+            raise SystemExit(f"Missing Code Anchors or Playbook in sample note: {rep.title}")
+    print(f"[PASS] Code Anchors & Playbook contract check ({len(reports)} notes)")
 
     with McpStreamClient(args.mcp_url) as client:
         available = {t["name"] for t in client.request("tools/list")["tools"]}

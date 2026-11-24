@@ -6,21 +6,21 @@
 ![Embedding](https://img.shields.io/badge/BGE-bge--small--zh--v1.5-F59E0B)
 ![MkDocs Material](https://img.shields.io/badge/MkDocs-Material-526CFE?logo=materialformkdocs&logoColor=white)
 
-面向 **Claude Code、Codex、Cursor** 等多工具协同研发场景的本地/团队级上下文与研发经验管理服务。基于 **Git** 维护项目确定性规范（AGENTS.md / CLAUDE.md / .ai 目录），通过 **Basic Memory + MCP 协议** 沉淀历史排障经验与技术方案，结合 **SQLite FTS5 (BM25) + 本地中文 Embedding (bge-small-zh-v1.5)** 混合检索与 **MkDocs** 知识站，实现跨会话记忆读写与团队知识共享。
+面向 **Claude Code、Codex、Cursor** 等多工具协同研发场景的本地/团队级上下文与研发经验管理服务。基于 **Git** 维护项目确定性规范（AGENTS.md / CLAUDE.md / .ai 目录），通过 **Basic Memory + MCP 协议** 沉淀带**代码锚点（Code Anchors）**与**可执行诊断剧本（Playbook）**的活体研发记忆，结合 **SQLite FTS5 (BM25) + 本地中文 Embedding (bge-small-zh-v1.5)** 混合检索与 **MkDocs** 知识站，实现跨会话记忆读写、防过期自愈与团队知识共享。
 
 ![一图看懂 AI Coding 研发记忆库](docs/assets/comic-overview.svg)
 
 ---
 
-## 核心机制：按需加载与按需读写执行流
+## 核心设计：四步按需加载与活体记忆自愈
 
-在多微服务研发场景下，多个独立的业务 Git 仓库共享同一个 Basic Memory MCP 服务。为了避免一上来将所有文档和历史记忆塞进上下文导致 Token 爆炸，AI 客户端遵循严格的**四步按需触发链路**：
+在多微服务研发场景下，多个独立的业务 Git 仓库共享同一个 Basic Memory MCP 服务。为了防止全量加载撑爆 Token 窗口，并解决“代码重构后旧笔记过期腐烂”的难题，系统遵循以下四步工作流：
 
 ### 第一步：项目级配置挂载 MCP 服务
-每个业务子仓库根目录下放置客户端配置文件（Claude Code 读取 .mcp.json，Codex 读取 .codex/config.toml，Cursor 读取 .cursor/mcp.json），将工具统一接入共享的 Streamable HTTP MCP 服务端（:8000/mcp）。
+各业务子仓库根目录通过客户端配置文件（.mcp.json、.codex/config.toml、.cursor/mcp.json）统一接入共享的 Streamable HTTP MCP 服务端（:8000/mcp）。
 
 ### 第二步：自动读取子项目 AGENTS.md 入口与底部钩子
-AI 进入具体微服务项目时，首先读取该项目根目录下的 **AGENTS.md**（**CLAUDE.md** 仅包含一行 @AGENTS.md 引用同一事实源，消除多工具规则漂移），获取当前项目的模块划分、Maven/脚本构建测试命令与代码红线；同时通过文件末尾的钩子指令，接管后续的按需加载策略：
+AI 进入具体微服务仓库时，首先读取该项目根目录下的 **AGENTS.md**（**CLAUDE.md** 仅一行 @AGENTS.md 引用同一事实源），获取模块划分与构建测试命令，并通过文件末尾的钩子接管按需加载策略：
 
 ```markdown
 # Agent Instructions (位于各子项目 AGENTS.md 底部)
@@ -29,42 +29,53 @@ Apply any more-specific AGENTS.md files within their directory scope.
 ```
 
 ### 第三步：本地静态规范按需路由（由 .ai/AI_CONTEXT.md 控制）
-明确禁止 AI 递归预加载整个 docs 目录，仅根据当前任务类型按需读取对应文档：
-- **日常编码与测试**：按需读取 docs/development/conventions.md 开发规约。
-- **跨模块与架构变更**：按需读取 docs/architecture/ 模块边界说明与 docs/adr/ 架构决策记录。
-- **长周期任务续接**：按需读取 docs/tasks/ 下的任务追踪文档。
+禁止 AI 递归预加载整个 docs 目录，仅按当前任务类型按需读取 docs/development/conventions.md（开发规约）、docs/architecture/（模块边界）、docs/adr/（架构决策）或 docs/tasks/（长任务追踪）。
 
-### 第四步：远端 Basic Memory 按需检索与沉淀（由 .ai/MEMORY_POLICY.md 与 Skills 控制）
-多个微服务项目物理共用同一个记忆库，逻辑上通过 **repository** 元数据实现项目级隔离与按需读写：
-- **Git 上下文自动溯源**：读写记忆前，AI 先执行 .ai/scripts/get-developer-context.sh，自动从 Git 提取当前项目的确定性 repository 名称、branch、commit 与 developer_id。
-- **按需检索（memory-continue）**：仅在排查历史疑难故障、改动高风险模块或跨会话续接工作时触发。优先限定当前项目作用域调用混合检索（BM25 精确匹配错误码/类名 + BGE 中文向量语义召回），必要时沿 Relations 关系图谱做二跳扩展：
-  ```python
-  # 1. 限定当前微服务仓库作用域，按需混合检索
-  search_notes(
-      project="main",
-      query="ERR_ACCOUNT_LOCK_TIMEOUT 热点账户行锁超时",
-      metadata_filters={"repository": "pay-ledger"},
-  )
-  # 2. 命中核心笔记后，按需拉取全文或沿 [[Relations]] 图谱构建关联上下文
-  build_context(url="memory://projects/pay-ledger/troubleshooting/hot-account-lock-timeout", depth=2)
-  ```
-- **按需写入与查重合成（memory-capture / memory-notes）**：仅在确认故障根因、修复方案验证通过或形成关键技术决策时触发。写入前必须先调用 search_notes 查重——已有同类笔记则原地合成覆写（Synthesize, don't append，拒绝碎片化流水账）；无则按 6 大标准分类（incident 线上故障 / debugging 排查过程 / solution 解决方案 / pitfall 技术陷阱 / practice 工程实践 / task-context 长任务上下文）写入：
-  ```python
-  write_note(
-      project="main",
-      title="热点账户行锁超时排查",
-      directory="projects/pay-ledger/troubleshooting",
-      content="# 热点账户行锁超时排查\n\n...(根因、修复与验证)...\n\n## Observations\n- [root_cause] ...\n- [fix] ...\n\n## Relations\n- relates_to [[交易终态事件驱动编排规范]]",
-      metadata={
-          "repository": "pay-ledger",
-          "memory_type": "troubleshooting",
-          "status": "verified",
-          "branch": "master",
-      },
-  )
-  ```
-- **三态知识晋升闭环（status）**：
-  **draft**（排查中的假设与初步证据） $\rightarrow$ **verified**（经测试或线上验证的确切方案） $\rightarrow$ **promoted**（当经验沉淀为长期强制规范时，反哺写入 Git 仓库的 docs/adr/ 或 conventions.md，并将记忆标记为已晋升）。
+### 第四步：远端记忆按需读写、代码锚点校验与 Playbook 自愈（由 .ai/MEMORY_POLICY.md 与 Skills 控制）
+多个微服务物理共用同一记忆库，逻辑上通过 **repository** 元数据隔离，每篇笔记均包含 **代码锚点（Code Anchors）** 与 **可执行剧本（Playbook）**：
+
+- **按需检索与读时三级锚点核验（memory-continue）**：
+  AI 先执行 .ai/scripts/get-developer-context.sh 解析当前 Git 仓库名，再按 repository 过滤执行 BM25 + BGE 中文向量混合检索。召回笔记后，通过 .ai/scripts/check-memory-drift.sh（或 coding_memory.drift）对比笔记绑定的 commit、code_paths（核心源码路径）与 code_symbols（类名#方法名/错误码）在本地最新代码中的状态：
+  - **CLEAN（零漂移）**：关联源码自记录以来未变更，直接采纳。
+  - **MODIFIED_SAFE（文件演进但核心符号完好）**：文件有演进但核心方法与常量仍在，结合近期 Diff 采纳。
+  - **DRIFTED（高危漂移，标记为 stale）**：关联文件或核心方法已变更/删除，触发 Playbook 复核自愈。
+
+- **受控可执行剧本（Playbook）**：
+  笔记正文内置标准化的 Playbook 章节，杜绝 AI 盲猜排查与验证命令：
+  - **[probe] 只读诊断探针**：遇到同类故障时可直接复用的日志检索式或参数化只读排查 SQL。
+  - **[verify] 回归验证命令**：验证该方案是否依然生效的最小单元测试或冒烟命令。
+
+- **查重合成与四态生命周期闭环（memory-capture / memory-notes）**：
+  写入前先调 search_notes 查重，同主题原地合成覆写（拒绝碎片化追加），按 projects/&lt;repository&gt;/&lt;memory_type&gt;/ 归档为 6 类标准笔记（incident / debugging / solution / pitfall / practice / task-context），形成四态自愈闭环：
+  **draft**（排查草稿） $\rightarrow$ **verified**（已验证并绑定代码锚点） $\rightarrow$ **stale**（源码演进触发漂移，经 Playbook 复核并刷新 commit 后自愈回 verified） / **promoted**（沉淀为长期架构红线反哺写入 Git 仓库的 ADR 或开发规约）。
+
+**活体记忆笔记结构示例：**
+
+```markdown
+---
+title: 热点账户行锁超时排查
+repository: pay-ledger
+memory_type: troubleshooting
+status: verified
+commit: 8f3a1c2
+code_paths: [pay-ledger-server/src/main/java/com/pay/ledger/account/HotAccountShardingService.java]
+code_symbols: [HotAccountShardingService#routeSubAccount, ERR_ACCOUNT_LOCK_TIMEOUT]
+---
+
+# 热点账户行锁超时排查
+...(根因与拆分归集方案)...
+
+## Observations
+- [root_cause] 同一平台收益账户高峰期集中并发写入，单行锁串行等待占满连接池。
+- [fix] 按峰值冗余拆分子账户，订单号 Hash 取模路由分散写压力，配合定时任务异步归集。
+
+## Playbook
+- [probe] 检索近 15 分钟行锁超时日志：error_code="ERR_ACCOUNT_LOCK_TIMEOUT"
+- [verify] 运行热点子账户路由与归集单测：mvn -pl pay-ledger-server test -Dtest=HotAccountShardingServiceTest
+
+## Relations
+- relates_to [[交易终态事件驱动编排规范]]
+```
 
 ---
 
@@ -85,8 +96,6 @@ docker compose ps
 | **MkDocs 知识站** | http://localhost:8088/ | 人类浏览器实时查阅同一批 Markdown 笔记 |
 | **BGE 中文向量服务** | 容器内 http://embedding:8001/v1 | 本地 CPU 推理生成 512 维 L2 归一化中文向量 |
 
-> 端口冲突时，将 .env.example 复制为 .env 并修改 MCP_PORT 或 SITE_PORT。
-
 ### 方式二：本机直接运行（无 Docker，基于 uv）
 
 ```bash
@@ -94,57 +103,40 @@ uv sync --locked --managed-python --python 3.12
 uv run --locked python -m coding_memory local
 ```
 
-### 端到端冒烟验证
+### 端到端冒烟与代码锚点契约验证
 
 ```bash
-# 校验 MCP 握手与 text(错误码) / vector(中文语义) / hybrid 三路检索
-python3 -m coding_memory.verify
+# 校验示例笔记的 Code Anchors 与 Playbook 契约，并可对比指定业务 Git 仓库检测漂移
+python3 -m coding_memory.drift --require-contract
 
-# 额外校验 write_note -> read_note -> MkDocs 实时渲染 -> delete_note 闭环
+# 校验 MCP 握手、三路混合检索 (text/vector/hybrid) 与 MkDocs 实时发布闭环
 python3 -m coding_memory.verify --write-check
 ```
 
 ---
 
-## 业务仓库一键接入模板与核心配置
+## 业务仓库一键接入模板
 
-将 examples/client-project/ 下的文件复制到任意业务微服务仓库根目录即可完成接入：
+将 examples/client-project/ 复制到业务微服务仓库根目录即可完成接入：
 
 ```text
 your-service-repo/
-├── AGENTS.md                           # 子项目模块结构、构建测试命令与底部 .ai 钩子入口
-├── CLAUDE.md                           # 单行 @AGENTS.md 引用，保持多工具规范单一事实源
-├── .mcp.json                           # Claude Code MCP 接入配置
+├── AGENTS.md                           # 子项目模块结构、构建命令与底部 .ai 钩子入口
+├── CLAUDE.md                           # 单行 @AGENTS.md 引用，保持多工具单一事实源
+├── .mcp.json                           # Claude Code MCP 接入配置 (:8000/mcp)
 ├── .codex/config.toml                  # Codex CLI MCP 接入配置
 ├── .cursor/mcp.json                    # Cursor MCP 接入配置
 ├── .ai/
 │   ├── AI_CONTEXT.md                   # 本地 docs/ (conventions / adr / tasks) 按需路由规则
-│   ├── MEMORY_POLICY.md                # 远端 MCP 检索、查重、6 大分类、脱敏与三态晋升策略
-│   └── scripts/get-developer-context.sh# 自动提取 Git repository / branch / commit / developer 元数据
+│   ├── MEMORY_POLICY.md                # 代码锚点、Playbook、6 大分类与四态自愈策略
+│   └── scripts/
+│       ├── get-developer-context.sh    # 自动提取 Git repository / branch / commit 元数据
+│       └── check-memory-drift.sh       # 客户端读时三级代码锚点漂移核验脚本
 └── .agents/skills/
-    ├── memory-continue/SKILL.md        # 跨会话按需检索与关系图谱遍历指引
-    ├── memory-capture/SKILL.md         # 会话结论查重与原地合成覆写指引
-    └── memory-notes/SKILL.md           # Frontmatter + Observations + Relations 结构化笔记规范
+    ├── memory-continue/SKILL.md        # 按需混合检索、读时漂移核验与 Playbook 诊断指引
+    ├── memory-capture/SKILL.md         # 查重原地合成与 stale 笔记自愈刷新指引
+    └── memory-notes/SKILL.md           # Code Anchors + Observations + Playbook + Relations 规范
 ```
-
-**各客户端 MCP 接入配置明细：**
-
-- **Claude Code（.mcp.json）与 Cursor（.cursor/mcp.json）**：
-  ```json
-  {
-    "mcpServers": {
-      "basic-memory": {
-        "type": "http",
-        "url": "http://localhost:8000/mcp"
-      }
-    }
-  }
-  ```
-- **Codex CLI（.codex/config.toml）**：
-  ```toml
-  [mcp_servers.basic-memory]
-  url = "http://localhost:8000/mcp"
-  ```
 
 ---
 
@@ -159,11 +151,12 @@ your-service-repo/
 ├── coding_memory/
 │   ├── config.py                # 核心运行时配置与目录映射 (RuntimeConfig)
 │   ├── encoder.py               # FastAPI OpenAI 兼容向量服务 (BAAI/bge-small-zh-v1.5)
-│   ├── __main__.py              # 服务统一入口与本机多进程编排器 (memory / embedding / site / local)
-│   └── verify.py                # MCP Streamable HTTP + 混合检索 + 知识站端到端验证套件
+│   ├── drift.py                 # 三级代码锚点漂移检测与可执行 Playbook 解析引擎
+│   ├── __main__.py              # 服务统一入口与本机多进程编排器
+│   └── verify.py                # 锚点契约 + MCP Streamable HTTP + 混合检索端到端验证
 ├── examples/
 │   ├── client-project/          # 业务仓库分层接入脚手架 (AGENTS.md + .ai/ + 3 Skills)
-│   └── notes/                   # 示例研发记忆笔记 (troubleshooting / architecture / solution)
+│   └── notes/                   # 含代码锚点与 Playbook 的示例研发笔记
 └── docs/
     └── assets/comic-overview.svg# 四格漫画与全链路架构图
 ```
