@@ -6,9 +6,9 @@
 ![Embedding](https://img.shields.io/badge/BGE-bge--small--zh--v1.5-F59E0B)
 ![MkDocs Material](https://img.shields.io/badge/MkDocs-Material-526CFE?logo=materialformkdocs&logoColor=white)
 
-面向 **Claude Code、Codex、Cursor** 等多工具协同研发场景的**轻量化、低 Token 开销**上下文与研发经验管理服务。基于 **Git** 维护项目确定性规范（AGENTS.md / CLAUDE.md / .ai 目录），通过 **Basic Memory + MCP 协议** 沉淀带**代码锚点（Code Anchors）**与**可执行诊断剧本（Playbook）**的活体研发记忆，结合 **SQLite FTS5 (BM25) + 本地轻量中文 Embedding (bge-small-zh-v1.5)** 混合检索与 **MkDocs** 知识站，在大幅降低 Agent 盲搜代码 Token 消耗的同时，实现跨会话记忆复用、防过期自愈与团队知识共享。
+面向 **Claude Code、Codex、Cursor** 等多工具协同研发场景的**轻量化、低 Token 开销**上下文与研发经验管理服务。基于 **Git** 维护项目确定性规范（AGENTS.md / CLAUDE.md / .ai 目录），通过 **Basic Memory + MCP 协议** 沉淀带 **代码锚点（Code Anchors）** 与 **可执行诊断剧本（Playbook）** 的活体研发记忆，结合 **SQLite FTS5 (BM25) + 本地轻量中文 Embedding (bge-small-zh-v1.5)** 混合检索与 **MkDocs** 知识站，在大幅降低 Agent 盲搜代码 Token 消耗的同时，实现跨会话记忆复用、防过期自愈与团队知识共享。
 
-![一图看懂 AI Coding 研发记忆库](docs/assets/comic-overview.svg)
+![一图看懂 AI Coding 研发记忆库](docs/assets/anchored-memory-comic.svg)
 
 ---
 
@@ -153,7 +153,7 @@ your-service-repo/
 │   ├── client-project/          # 业务仓库轻量化分层接入脚手架 (AGENTS.md + .ai/ + 3 Skills)
 │   └── notes/                   # 含代码锚点与 Playbook 的示例研发笔记
 └── docs/
-    └── assets/comic-overview.svg# 四格漫画与全链路架构图
+    └── assets/anchored-memory-comic.svg # 四格漫画与全链路架构图
 ```
 
 ## 许可证
