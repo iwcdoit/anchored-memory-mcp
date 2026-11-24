@@ -111,6 +111,47 @@ wheels = [
 ]
 
 [[package]]
+name = "anchored-memory-mcp"
+version = "0.1.0"
+source = { virtual = "." }
+
+[package.dev-dependencies]
+embedding = [
+    { name = "fastapi" },
+    { name = "huggingface-hub" },
+    { name = "torch", version = "2.8.0", source = { registry = "https://pypi.org/simple" }, marker = "sys_platform != 'linux'" },
+    { name = "torch", version = "2.8.0+cpu", source = { registry = "https://download.pytorch.org/whl/cpu" }, marker = "sys_platform == 'linux'" },
+    { name = "transformers" },
+    { name = "uvicorn" },
+]
+memory = [
+    { name = "basic-memory" },
+    { name = "litellm" },
+    { name = "sqlite-vec" },
+]
+site = [
+    { name = "mkdocs-material" },
+]
+
+[package.metadata]
+
+[package.metadata.requires-dev]
+embedding = [
+    { name = "fastapi", specifier = ">=0.136.1,<1" },
+    { name = "huggingface-hub", specifier = ">=0.34,<1" },
+    { name = "torch", marker = "sys_platform != 'linux'", specifier = "==2.8.0" },
+    { name = "torch", marker = "sys_platform == 'linux'", specifier = "==2.8.0", index = "https://download.pytorch.org/whl/cpu" },
+    { name = "transformers", specifier = ">=4.55,<5" },
+    { name = "uvicorn", specifier = ">=0.34,<1" },
+]
+memory = [
+    { name = "basic-memory", specifier = "==0.23.0" },
+    { name = "litellm", specifier = "==1.91.5" },
+    { name = "sqlite-vec", specifier = "==0.1.9" },
+]
+site = [{ name = "mkdocs-material", specifier = "==9.7.7" }]
+
+[[package]]
 name = "annotated-doc"
 version = "0.0.7"
 source = { registry = "https://pypi.org/simple" }
@@ -249,47 +290,6 @@ sdist = { url = "https://files.pythonhosted.org/packages/76/ab/9bd2b916fe29b5d33
 wheels = [
     { url = "https://files.pythonhosted.org/packages/35/f2/79a0528790e20649861f056b19d2413c4f3cf3da3ef069746aab2c18d5cc/basic_memory-0.23.0-py3-none-any.whl", hash = "sha256:196ac1ff9ace9df51f1131dcad4d4f1f7d3f65dd5fbfa08bb4819f5f2c486a5e", size = 1392650, upload-time = "2026-08-24T02:34:01.177Z" },
 ]
-
-[[package]]
-name = "basic-memory-stack"
-version = "0.1.0"
-source = { virtual = "." }
-
-[package.dev-dependencies]
-embedding = [
-    { name = "fastapi" },
-    { name = "huggingface-hub" },
-    { name = "torch", version = "2.8.0", source = { registry = "https://pypi.org/simple" }, marker = "sys_platform != 'linux'" },
-    { name = "torch", version = "2.8.0+cpu", source = { registry = "https://download.pytorch.org/whl/cpu" }, marker = "sys_platform == 'linux'" },
-    { name = "transformers" },
-    { name = "uvicorn" },
-]
-memory = [
-    { name = "basic-memory" },
-    { name = "litellm" },
-    { name = "sqlite-vec" },
-]
-site = [
-    { name = "mkdocs-material" },
-]
-
-[package.metadata]
-
-[package.metadata.requires-dev]
-embedding = [
-    { name = "fastapi", specifier = ">=0.136.1,<1" },
-    { name = "huggingface-hub", specifier = ">=0.34,<1" },
-    { name = "torch", marker = "sys_platform != 'linux'", specifier = "==2.8.0" },
-    { name = "torch", marker = "sys_platform == 'linux'", specifier = "==2.8.0", index = "https://download.pytorch.org/whl/cpu" },
-    { name = "transformers", specifier = ">=4.55,<5" },
-    { name = "uvicorn", specifier = ">=0.34,<1" },
-]
-memory = [
-    { name = "basic-memory", specifier = "==0.23.0" },
-    { name = "litellm", specifier = "==1.91.5" },
-    { name = "sqlite-vec", specifier = "==0.1.9" },
-]
-site = [{ name = "mkdocs-material", specifier = "==9.7.7" }]
 
 [[package]]
 name = "beartype"
