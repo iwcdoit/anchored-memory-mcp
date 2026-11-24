@@ -68,7 +68,7 @@ class McpStreamClient:
             {
                 "protocolVersion": self._protocol_version,
                 "capabilities": {},
-                "clientInfo": {"name": "coding-memory-verifier", "version": "0.1.0"},
+                "clientInfo": {"name": "anchored-memory-mcp-verifier", "version": "0.1.0"},
             },
         )
         self._protocol_version = init_res["protocolVersion"]

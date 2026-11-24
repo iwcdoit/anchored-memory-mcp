@@ -1,4 +1,4 @@
-# AI Coding 研发记忆库 (MCP)
+# Anchored Memory MCP — 基于代码锚点的 AI 研发记忆库
 
 ![Python 3.12](https://img.shields.io/badge/Python-3.12-3776AB?logo=python&logoColor=white)
 ![MCP Streamable HTTP](https://img.shields.io/badge/MCP-Streamable_HTTP-2563EB)

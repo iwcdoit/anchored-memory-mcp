@@ -1,7 +1,7 @@
 [project]
-name = "coding-memory-mcp"
+name = "anchored-memory-mcp"
 version = "0.1.0"
-description = "Hybrid MCP memory service and knowledge station for AI Coding assistants"
+description = "Code-anchored hybrid MCP memory service and knowledge station for AI Coding assistants"
 requires-python = ">=3.12,<3.13"
 
 [dependency-groups]
