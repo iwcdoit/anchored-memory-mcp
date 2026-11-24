@@ -1,0 +1,15 @@
+site_name: AI Coding 研发记忆库
+site_description: 基于 Basic Memory 与 MCP 的研发排障经验与架构知识站
+docs_dir: !ENV [CMEM_DOCS_DIR, var/notes]
+theme:
+  name: material
+  language: zh
+  font: false
+plugins:
+  - search:
+      lang: zh
+markdown_extensions:
+  - tables
+  - fenced_code
+  - toc:
+      permalink: true

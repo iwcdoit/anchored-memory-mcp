@@ -1,0 +1,66 @@
+services:
+  embedding:
+    build:
+      context: .
+      args:
+        SERVICE_GROUP: embedding
+    command: [python, -m, coding_memory, embedding, --host, 0.0.0.0, --port, "8001"]
+    environment:
+      CMEM_THREADS: "${CMEM_THREADS:-2}"
+    volumes:
+      - embedding-cache:/data/cache
+    healthcheck:
+      test: [CMD, python, -m, coding_memory, health, http, "http://localhost:8001/healthz"]
+      interval: 5s
+      timeout: 4s
+      retries: 60
+    restart: unless-stopped
+
+  memory:
+    build:
+      context: .
+      args:
+        SERVICE_GROUP: memory
+    command: [python, -m, coding_memory, memory, --host, 0.0.0.0, --port, "8000"]
+    depends_on:
+      embedding:
+        condition: service_healthy
+    environment:
+      CMEM_EMBED_URL: http://embedding:8001/v1
+      CMEM_INIT_SAMPLES: "${CMEM_INIT_SAMPLES:-1}"
+    ports:
+      - "${MCP_PORT:-8000}:8000"
+    volumes:
+      - notes:/data/notes
+      - memory-config:/data/config
+    healthcheck:
+      test: [CMD, python, -m, coding_memory, health, tcp, localhost, "8000"]
+      interval: 5s
+      timeout: 4s
+      retries: 24
+    restart: unless-stopped
+
+  site:
+    build:
+      context: .
+      args:
+        SERVICE_GROUP: site
+    command: [python, -m, coding_memory, site, --host, 0.0.0.0, --port, "8088"]
+    depends_on:
+      memory:
+        condition: service_healthy
+    ports:
+      - "${SITE_PORT:-8088}:8088"
+    volumes:
+      - notes:/data/notes:ro
+    healthcheck:
+      test: [CMD, python, -m, coding_memory, health, http, "http://localhost:8088/"]
+      interval: 5s
+      timeout: 4s
+      retries: 12
+    restart: unless-stopped
+
+volumes:
+  notes:
+  memory-config:
+  embedding-cache:

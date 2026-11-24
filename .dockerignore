@@ -1,0 +1,8 @@
+.git
+.idea
+.venv
+.env*
+var
+notes-backup
+**/__pycache__
+**/.DS_Store

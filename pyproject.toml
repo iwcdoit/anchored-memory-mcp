@@ -1,0 +1,38 @@
+[project]
+name = "coding-memory-mcp"
+version = "0.1.0"
+description = "Hybrid MCP memory service and knowledge station for AI Coding assistants"
+requires-python = ">=3.12,<3.13"
+
+[dependency-groups]
+memory = [
+    "basic-memory==0.23.0",
+    "litellm==1.91.5",
+    "sqlite-vec==0.1.9",
+]
+embedding = [
+    "fastapi>=0.136.1,<1",
+    "huggingface-hub>=0.34,<1",
+    "torch==2.8.0",
+    "transformers>=4.55,<5",
+    "uvicorn>=0.34,<1",
+]
+site = [
+    "mkdocs-material==9.7.7",
+]
+
+[tool.uv]
+package = false
+default-groups = ["memory", "embedding", "site"]
+environments = [
+    "sys_platform == 'darwin' and platform_machine == 'arm64'",
+    "sys_platform == 'linux' and (platform_machine == 'aarch64' or platform_machine == 'x86_64')",
+]
+
+[tool.uv.sources]
+torch = { index = "pytorch-cpu", marker = "sys_platform == 'linux'" }
+
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true
