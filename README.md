@@ -6,7 +6,7 @@
 ![Embedding](https://img.shields.io/badge/BGE-bge--small--zh--v1.5-F59E0B)
 ![MkDocs Material](https://img.shields.io/badge/MkDocs-Material-526CFE?logo=materialformkdocs&logoColor=white)
 
-面向 **Claude Code、Codex、Cursor** 等多工具协同开发场景的轻量化研发记忆与上下文管理服务。日常用 AI 辅助研发时，排障经验和业务设计往往散落在单次对话里——换个会话就“失忆”，换个工具就不互通，写成静态文档又容易在代码重构后过期误导。本项目将**项目公共规范**随 Git 仓库版本化共享，将**跨会话的排障与设计笔记**沉淀到统一的 MCP 记忆服务中；每篇笔记直接关联真实的源码路径、核心方法与排查验证步骤，让 AI 下次遇到同类问题时能直接顺着笔记定位代码并核对逻辑是否变更，同时支持团队在网页端实时查阅。
+面向 **Claude Code、Codex、Cursor** 等多工具与团队协同开发场景的轻量化研发记忆与上下文管理服务。日常用 AI 辅助研发时，排障经验和业务设计往往散落在单次对话里——换个会话就“失忆”，换个工具就不互通，写成静态文档又容易在代码重构后过期误导。本项目将**项目公共规范**随 Git 仓库版本化共享，将**跨会话的排障与设计笔记**沉淀到统一的 MCP 记忆服务中；每篇笔记直接关联真实的源码路径、核心方法与排查验证步骤，让 AI 下次遇到同类问题时能直接顺着笔记定位代码并核对逻辑是否变更，同时支持在网页端实时查阅。
 
 ![一图看懂 AI Coding 研发记忆库](docs/assets/anchored-memory-comic.svg)
 
