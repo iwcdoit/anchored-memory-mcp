@@ -229,7 +229,7 @@
     <rect x="0" y="0" width="142" height="146" rx="10" fill="#FFFFFF" stroke="#1E293B" stroke-width="2.5"/>
     <circle cx="24" cy="24" r="13" fill="#10B981" stroke="#1E293B" stroke-width="2"/>
     <text x="24" y="29" text-anchor="middle" font-family="system-ui, sans-serif" font-size="12.5" font-weight="900" fill="#FFFFFF">1</text>
-    <text x="43" y="29" font-family="system-ui, sans-serif" font-size="12" font-weight="900" fill="#0F172A">受控剧本执行</text>
+    <text x="43" y="29" font-family="system-ui, sans-serif" font-size="12" font-weight="900" fill="#0F172A">可执行剧本</text>
     <text x="12" y="54" font-family="monospace" font-size="10.5" font-weight="800" fill="#059669">## Playbook</text>
     <text x="12" y="76" font-family="system-ui, sans-serif" font-size="11" font-weight="600" fill="#334155">[probe] 只读日志/SQL</text>
     <text x="12" y="96" font-family="system-ui, sans-serif" font-size="11" font-weight="600" fill="#334155">[verify] 回归单测命令</text>
